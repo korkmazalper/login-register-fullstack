@@ -1,18 +1,27 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { TextField, Button, Container, Typography, Box, Grid, Alert, Snackbar } from '@mui/material';
+import { TextField, Button, Container, Typography, Box, Grid, Snackbar } from '@mui/material';
+import { validateEmail } from '../utilities/validators';
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
-  const [openSnackbar, setOpenSnackbar] = useState(false);  // Snackbar açık/kapalı durumu
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarColor, setSnackbarColor] = useState('green');
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!validateEmail(email)) {
+      setSnackbarMessage('Invalid email format');
+      setSnackbarColor('red');
+      setOpenSnackbar(true);
+      return;
+    }
 
     try {
       const response = await axios.post('http://localhost:3000/users/login', { email, password });
@@ -20,17 +29,18 @@ function Login() {
       if (response.data.user) {
         localStorage.setItem('user', JSON.stringify(response.data.user));
         setSuccessMessage('Login successful! Redirecting...');
-        
-        // Snackbar'ı açalım
+        setSnackbarMessage(successMessage);
+        setSnackbarColor('green');
         setOpenSnackbar(true);
 
-        // 2 saniye sonra kullanıcıyı yönlendirelim
         setTimeout(() => {
           navigate('/user');
-        }, 2000); // 2 saniye bekle
+        }, 2000);
       }
     } catch (error) {
-      setError('Invalid email or password');
+      setSnackbarMessage('Invalid login credentials. Please try again.');
+      setSnackbarColor('red');
+      setOpenSnackbar(true);
     }
   };
 
@@ -40,8 +50,6 @@ function Login() {
         <Typography variant="h4" gutterBottom>
           Login
         </Typography>
-
-        {error && <Alert severity="error" sx={{ width: '100%', marginBottom: '20px' }}>{error}</Alert>}
 
         <form onSubmit={handleSubmit} style={{ width: '100%' }}>
           <Grid container spacing={2}>
@@ -80,20 +88,19 @@ function Login() {
         </Typography>
       </Box>
 
-      {/* Snackbar (Başarı mesajı için) */}
       <Snackbar
         open={openSnackbar}
-        autoHideDuration={3000} // 3 saniye sonra kapanacak
+        autoHideDuration={3000}
         onClose={() => setOpenSnackbar(false)}
-        message={successMessage}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }} // Sol alt köşe
+        message={snackbarMessage}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
         sx={{
           '& .MuiSnackbarContent-root': {
-            backgroundColor: '#4caf50', // Yeşil renk (başarı)
-            color: 'white', // Yazı rengi
-            fontWeight: 'bold', // Kalın yazı
-            borderRadius: '8px', // Kenar yuvarlama
-            padding: '10px 20px', // İçerik paddingi
+            backgroundColor: snackbarColor === 'green' ? '#4caf50' : '#f44336',
+            color: 'white',
+            fontWeight: 'bold',
+            borderRadius: '8px',
+            padding: '10px 20px',
           },
         }}
       />
