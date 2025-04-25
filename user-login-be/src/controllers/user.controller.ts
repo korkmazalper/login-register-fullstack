@@ -31,15 +31,15 @@ export class UserController {
       throw new HttpErrors.BadRequest('User already exists');
     }
 
-    // Şifreyi hashle
+  
     user.password = await this.hashService.hashPassword(user.password);
 
     try {
-      // Yeni kullanıcıyı oluştur
+     
       const createdUser = await this.userRepository.create(user);
       return { user: createdUser };
     } catch (error) {
-      // Veritabanı hatası durumunda genel bir hata mesajı döndür
+   
       throw new HttpErrors.InternalServerError('Error during registration');
     }
   }
@@ -65,7 +65,6 @@ export class UserController {
     return { user: foundUser };
   }
 
-  // Yeni getAllUsers metodu eklendi
   @get('/users')
   @response(200, {
     description: 'Array of User model instances',
@@ -73,18 +72,16 @@ export class UserController {
       'application/json': {
         schema: {
           type: 'array',
-          items: getModelSchemaRef(User, { exclude: ['password'] }),  // Parola hariç kullanıcı verisi döndürülür
+          items: getModelSchemaRef(User, { exclude: ['password'] }),
         },
       },
     },
   })
   async getAllUsers(): Promise<User[]> {
     try {
-      // Kullanıcıların listesini al
       const users = await this.userRepository.find();
       return users;
     } catch (error) {
-      // Veritabanı hatası durumunda hata döndür
       throw new HttpErrors.InternalServerError('Error fetching users');
     }
   }

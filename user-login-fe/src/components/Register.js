@@ -1,52 +1,68 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { TextField, Button, Container, Typography, Box, Grid, Alert, Snackbar } from '@mui/material';
+import { TextField, Button, Container, Typography, Box, Grid, Snackbar } from '@mui/material';
+import { validateEmail, validatePassword } from '../utilities/validators';
 
 function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState(null); 
   const [emailError, setEmailError] = useState(false);
-  const [passwordError, setPasswordError] = useState(false); 
-  const [successMessage, setSuccessMessage] = useState('');
-  const [snackbarOpen, setSnackbarOpen] = useState(false); 
+  const [passwordError, setPasswordError] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarColor, setSnackbarColor] = useState('green'); 
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    
+    if (!validateEmail(email)) {
       setEmailError(true);
+      setSnackbarMessage('Invalid email format');
+      setSnackbarColor('red'); 
+      setSnackbarOpen(true);
       return;
     }
-
     setEmailError(false);
 
-    if (password.length < 6) {
+    if (!validatePassword(password)) {
       setPasswordError(true);
+      setSnackbarMessage('Password must be at least 8 characters, contain a number, a special symbol, and both uppercase and lowercase letters');
+      setSnackbarColor('red'); 
+      setSnackbarOpen(true);
       return;
     }
-
-    setPasswordError(false); 
+    setPasswordError(false);
 
     try {
       const response = await axios.post('http://localhost:3000/users/register', { email, password });
       if (response.data.user) {
-        setSuccessMessage('Registration successful! Redirecting to login...');
+        setSnackbarMessage('Registration successful! Redirecting to login...');
+        setSnackbarColor('green'); 
         setSnackbarOpen(true);
         setTimeout(() => {
-          navigate('/'); 
+          navigate('/');
         }, 2000); 
       }
     } catch (error) {
-      console.log(error);
-      if (error.response && error.response.data && error.response.data.error && error.response.data.error.message) {
-        setError(error.response.data.error.message);
+      
+      if (error.response) {
+        if (error.response.status === 400) {
+         
+          setSnackbarMessage(error.response.data.error.message || 'Bad request. Please check your input.');
+        } else {
+          
+          setSnackbarMessage(error.response.data.error.message || 'An unexpected error occurred.');
+        }
+        setSnackbarColor('red'); 
       } else {
-        setError('An unexpected error occurred.');
+        
+        setSnackbarMessage('No response from the server.');
+        setSnackbarColor('red'); 
       }
+      setSnackbarOpen(true);
     }
   };
 
@@ -56,23 +72,6 @@ function Register() {
         <Typography variant="h4" gutterBottom>
           Register
         </Typography>
-
-        {error && <Alert severity="error" sx={{ width: '100%', marginBottom: '20px' }}>{error}</Alert>}
-
-        {successMessage && (
-          <Snackbar
-            open={snackbarOpen}
-            autoHideDuration={2000}
-            onClose={() => setSnackbarOpen(false)}
-            message={successMessage}
-            sx={{
-              backgroundColor: 'green',
-              color: 'white',
-              borderRadius: '4px',
-              padding: '8px 16px',
-            }}
-          />
-        )}
 
         <form onSubmit={handleSubmit} style={{ width: '100%' }}>
           <Grid container spacing={2}>
@@ -85,8 +84,8 @@ function Register() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                error={emailError}  
-                helperText={emailError ? 'Invalid email format' : ''}  
+                error={emailError}
+                helperText={emailError ? 'Invalid email format' : ''}
               />
             </Grid>
             <Grid item xs={12}>
@@ -98,8 +97,8 @@ function Register() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                error={passwordError}  
-                helperText={passwordError ? 'Password must be at least 6 characters' : ''}  
+                error={passwordError}
+                helperText={passwordError ? 'Password must be at least 8 characters, contain a number, a special symbol, and both uppercase and lowercase letters' : ''}
               />
             </Grid>
             <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -114,6 +113,20 @@ function Register() {
           Already have an account? <a href="/">Login</a>
         </Typography>
       </Box>
+
+      
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={() => setSnackbarOpen(false)}
+        message={snackbarMessage}
+        sx={{
+          backgroundColor: snackbarColor, 
+          color: 'white',
+          borderRadius: '4px',
+          padding: '8px 16px',
+        }}
+      />
     </Container>
   );
 }
